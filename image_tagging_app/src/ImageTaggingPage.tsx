@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getImagesReq, saveImageReq } from './api/api-calls';
 import Checkbox from './components/Checkbox/Checkbox';
+import Radio from './components/Radio/Radio';
 import { useKeyPress } from './hooks/useKeyboardEvent';
 import { TaggedImage } from './types/taggedImage';
 
@@ -34,30 +35,48 @@ const tagLists1 = [
     ],
 ];
 
-const tagLists2 = [
-    [
-        'person',
-        'group',
-        'anomaly',
-    ],
-    [
-        'danger level low',
-        'danger level medium',
-        'danger level high',
-    ],
-    [
-        'quality low',
-        'quality medium',
-        'quality high',
-    ],
-    [
-        'snow',
-        'rain/water',
-        'dirt on windshield',
-        'fog',
-        'night',
-    ],
+const tagLists2: Array<LabelGroup> = [
+    {
+        type: 'multiple',
+        options: [
+            'person',
+            'group',
+            'anomaly',
+        ]
+    },
+    {
+        type: 'single',
+        options: [
+            'danger level none',
+            'danger level low',
+            'danger level medium',
+            'danger level high',
+        ]
+    },
+    {
+        type: 'single',
+        options: [
+            'quality low',
+            'quality medium',
+            'quality high',
+        ]
+    },
+    {
+        type: 'multiple',
+        options: [
+            'snow',
+            'rain/water',
+            'dirt on windshield',
+            'fog',
+            'night',
+        ]
+    },
 ];
+
+interface LabelGroup {
+    type: 'single' | 'multiple';
+    options: string[];
+}
 
 const ImageTaggingPage: React.FC<ImageTaggingPageProps> = (props) => {
 
@@ -145,6 +164,9 @@ const ImageTaggingPage: React.FC<ImageTaggingPageProps> = (props) => {
             setError(e.repsonse.data);
         } finally {
             setLoading(false);
+            if (mode === 'review') {
+                setImageIndex(prev => Math.min(filteredImages.length - 1, prev + 1));
+            }
         }
     }
 
@@ -231,6 +253,50 @@ const ImageTaggingPage: React.FC<ImageTaggingPageProps> = (props) => {
         </div>
     </React.Fragment>;
 
+    const renderMultipleChoiceGroup = (options: string[]) => {
+        return options.map(tag =>
+            <Checkbox
+                key={tag}
+                className="py-1"
+                id={tag}
+                name={tag}
+                checked={isTagActive(tag)}
+                onChange={(event) => {
+                    if (event.target.checked) {
+                        if (!currentTags.includes(tag)) {
+                            setCurrentTags(prev => [...prev, tag])
+                        }
+                    } else {
+                        setCurrentTags(prev => prev.filter(t => t !== tag));
+                    }
+                }}
+            >
+                {tag}
+            </Checkbox>)
+    }
+
+    const renderSingleChoiceGroup = (options: string[]) => {
+        return options.map(tag =>
+            <Radio
+                key={tag}
+                className="py-1"
+                id={tag}
+                name={tag}
+                checked={isTagActive(tag)}
+                onChange={(event) => {
+                    setCurrentTags(prev => [...prev.filter(p => !options.includes(p)), tag])
+
+                }}
+            >
+                {tag}
+            </Radio>)
+    }
+
+    const renderLabelGroup = (lg: LabelGroup) => {
+        return <div>
+            {lg.type === 'single' ? renderSingleChoiceGroup(lg.options) : renderMultipleChoiceGroup(lg.options)}
+        </div>
+    }
 
     const labelRow = () =>
         <React.Fragment>
@@ -250,25 +316,7 @@ const ImageTaggingPage: React.FC<ImageTaggingPageProps> = (props) => {
                             key={index.toFixed()}
                             className="border-bottom py-2"
                         >
-                            {tagList.map(tag =>
-                                <Checkbox
-                                    key={tag}
-                                    className="py-1"
-                                    id={tag}
-                                    name={tag}
-                                    checked={isTagActive(tag)}
-                                    onChange={(event) => {
-                                        if (event.target.checked) {
-                                            if (!currentTags.includes(tag)) {
-                                                setCurrentTags(prev => [...prev, tag])
-                                            }
-                                        } else {
-                                            setCurrentTags(prev => prev.filter(t => t !== tag));
-                                        }
-                                    }}
-                                >
-                                    {tag}
-                                </Checkbox>)}
+                            {renderLabelGroup(tagList)}
                         </div>
                     )
                     }

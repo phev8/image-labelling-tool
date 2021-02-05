@@ -11,9 +11,15 @@ func (dbService *DBService) GetImages() (results []types.TaggedImage, err error)
 	defer cancel()
 
 	filter := bson.M{}
+
+	noCursorTimeout := true
+	options := options.FindOptions{
+		NoCursorTimeout: &noCursorTimeout,
+	}
 	cur, err := dbService.collectionRef().Find(
 		ctx,
 		filter,
+		&options,
 	)
 
 	if err != nil {
